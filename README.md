@@ -20,6 +20,7 @@ This project optimizes **solar PV integration** for **Lake Turkana Wind Power (L
 ### **1️⃣ Clone the Repository**
 ```bash
 git clone https://github.com/Keuya/LTWP-Solar-Integration.git
+
 2️⃣ View Reports & Simulations
 Open feasibility reports from /docs/
 Analyze PVsyst results from /data/
@@ -32,6 +33,3 @@ Fork the repository, apply improvements, and submit a pull request.
 ✅ Analyze and improve grid stability and energy storage strategies
 
 📢 If you're interested in energy system optimization, feel free to join the discussion!
-
-
-
