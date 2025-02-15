@@ -34,25 +34,3 @@ Fork the repository, apply improvements, and submit a pull request.
 
  If you're interested in energy system optimization, feel free to join the discussion!
 # 📊 Key PVsyst Simulation Graphs
-
-### ☀️ Solar Yield Graph
-![Solar Yield](images/solar_yield_graph.png)
-
-### 🔄 Daily Input-Output Diagram
-![Daily Input-Output](images/Daily_Input_Output_Diagram.png)
-
-### 🌞 Incident Irradiation Distribution
-![Incident Irradiation](images/Incident_Irradiation_Distribution.png)
-
-### 🌡️ Array Temperature vs. Effective Irradiance
-![Array Temperature](images/Array_Temperature_vs_Effective_Irradiance.png)
-
-### 📉 Normalized Production and Loss Factors
-![Loss Factors](images/Normalized_Production_and_Loss_Factors.png)
-
-### 🔎 Performance Ratio (PR)
-![Performance Ratio](images/Performance_Ratio_PR.png)
-
-### ⚙️ System Output Power Distribution
-![Power Distribution](images/System_Output_Power_Distribution.png)
-
