@@ -1,0 +1,16 @@
+# Ignore system-generated files
+.DS_Store
+Thumbs.db
+
+# Ignore PVsyst backup and temp files
+*.VC0.BAK
+*.~VC0
+*.TMP
+*.LST
+*.LOG
+*.CFG
+*.bak
+
+# Ignore Excel auto-backup files
+*.xlsb
+*.xlsm
