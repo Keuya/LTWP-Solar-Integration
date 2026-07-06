@@ -1,0 +1,6 @@
+,Energy sold (GWh/yr),LCOE (USD/kWh)
+Base (P50),199.3,0.0374
+P90 yield,189.4,0.0393
+CAPEX +20%,199.3,0.044
+Curtailment 10%,179.4,0.0415
+Combined downside,170.4,0.0515
