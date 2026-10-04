@@ -19,6 +19,16 @@ Sources and limitations are in [the evidence register](evidence_register.csv) an
 
 Open [the seven-day sample profile](../data/illustrative_proxy_week.csv). NASA POWER v2.10.2 supplies hourly `WS50M` wind speed and `ALLSKY_SFC_SW_DWN` irradiance for 2.5°N, 36.8°E on 2–8 March 2024 (UTC). A generic shear adjustment and turbine power curve convert wind speed to MW; a simple GHI-to-output derate converts irradiance to solar MW. The file assumes 310 MW wind nameplate, 77.5 MWp solar and a 310 MW export ceiling. The export ceiling is an arbitrary sensitivity input, not a known grid limit. No price is supplied because no evidenced solar tariff is available.
 
+### Seven-day dispatch result
+
+| Export-ceiling sensitivity | Wind-only exported | Hybrid exported | Incremental hybrid energy |
+|---:|---:|---:|---:|
+| 200 MW | 8,717.9 MWh | 11,408.7 MWh | 2,690.8 MWh |
+| 310 MW | 8,982.8 MWh | 12,067.5 MWh | 3,084.7 MWh |
+| 400 MW | 8,982.8 MWh | 12,067.5 MWh | 3,084.7 MWh |
+
+These are outputs from the seven-day proxy and the model, not a forecast. The 400 MW case equals the 310 MW case because the input file itself applies a 310 MW export ceiling. Do not annualise these numbers or interpret incremental MWh as saleable energy until LTWP dispatch and solar offtake are evidenced.
+
 The power conversions are teaching assumptions, not turbine-specific or PVsyst results. See [the data notes](../data/README.md) for equations, source links and limits.
 
 Run it with:
