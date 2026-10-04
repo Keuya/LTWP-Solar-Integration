@@ -28,9 +28,11 @@ Important units: 400 kV describes voltage. It is not a 400 MW transfer limit. Ex
 
 ## Contents
 
-- [Evidence dashboard](docs/evidence_dashboard.md): one-page view of the four investment gates, evidence status and next requests.
+- [Evidence dashboard](docs/evidence_dashboard.md): one-page view of the four investment gates, proxy results and next requests.
+- [Required input pack](docs/required_input_pack.md): field-level definitions, periods, quality checks and evidence gates.
+- [Evidence request tracker](data/evidence_request_tracker.csv): downloadable checklist of specific requests, likely holders, priority and decision use.
 - hybrid_analysis.py: chronological dispatch-screening model; it requires time-series inputs.
-- data/hourly_profile_template.csv: schema for timestamped wind, solar and export-limit data.
+- data/hourly_profile_template.csv: intake schema for dispatch inputs and operational validation fields.
 - [Illustrative proxy week](data/illustrative_proxy_week.csv): NASA POWER-based seven-day proxy, with clearly labelled turbine/PV conversion assumptions.
 - docs/investment_case.md: diligence plan, commercial structures and project-finance model requirements.
 - docs/evidence_register.csv: source-backed claims, limitations and evidence requests.
@@ -46,7 +48,7 @@ The template contains headings only, so the command stops with an input-data err
 
     python hybrid_analysis.py --input data/illustrative_proxy_week.csv --output-dir outputs --scenario-caps-mw 200,310,400
 
-Required columns: timestamp (ISO-8601 with timezone), wind_available_mw, solar_available_mw, export_limit_mw. Optional: energy_price_usd_mwh. Revenue is calculated only when supplied and is an illustrative uniform-price case, not a PPA forecast.
+Model-required columns: timestamp (ISO-8601 with timezone), wind_available_mw, solar_available_mw and export_limit_mw. Optional validation fields in the template retain metered export, curtailment, availability, event IDs, source IDs and quality flags; the current script does not use these extras in dispatch calculations. Optional energy_price_usd_mwh applies one illustrative uniform price to total hybrid exports and is not a PPA forecast.
 
 The sample profile uses NASA POWER hourly 50 m wind and all-sky irradiance for a point near LTWP (2–8 March 2024, UTC), converted using a generic 80 m shear adjustment/turbine power curve and a simple GHI-to-PV output derate. It is a weather-based proxy, not LTWP turbine output or a PVsyst yield assessment. The 310 MW export ceiling is arbitrary and is not a known connection limit. One week cannot support annual yield, curtailment, revenue or financing conclusions. See the [dashboard](docs/evidence_dashboard.md) for methodology, limits and evidence requests.
 
