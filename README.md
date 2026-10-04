@@ -1,5 +1,19 @@
 # LTWP Solar Hybrid: investment and grid-deliverability screen
 
+## Complete 2024 case-study data pack
+
+Start here for a complete, reproducible demonstration. This full-year hourly model uses generic inputs calibrated to public annual anchors; it does not contain actual LTWP SCADA or a bankable solar yield forecast.
+
+- [Model basis, assumptions and results](docs/case_study_model_basis.md)
+- [Hourly generation, availability and curtailment dataset](data/case_study_hourly_2024.csv) (8,784 hourly intervals)
+- [NASA POWER weather input](data/nasa_power_weather_2024.csv) and [source metadata](data/nasa_power_weather_2024_metadata.json)
+- [Rebuild script](scripts/build_case_study_data.py) and [assumption file](data/case_study_assumptions.json)
+- [PVsyst output provenance and missing native project inputs](docs/pvsyst_model_provenance.md)
+- [Illustrative, nonbinding solar offtake terms](docs/hypothetical_solar_offtake_terms.md)
+- [Required real-project inputs](docs/required_input_pack.md) and [evidence request tracker](data/evidence_request_tracker.csv)
+
+Rebuild with `python scripts/build_case_study_data.py`, then run the dispatch model with `python hybrid_analysis.py --input data/case_study_hourly_2024.csv --output-dir outputs --scenario-caps-mw 250,310,400`. Weather retrieval is optional and uses `--fetch`.
+
 An independent screening study of whether a co-located solar PV project at Lake Turkana Wind Power (LTWP) could create financeable incremental value. This is a decision framework and reproducible dispatch screen, not an LTWP proposal, grid-connection study, yield assessment or investment recommendation.
 
 ## Decision question

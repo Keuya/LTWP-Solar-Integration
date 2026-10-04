@@ -1,0 +1,70 @@
+{
+  "case_name": "LTWP co-located solar integration: illustrative 2024 case study",
+  "classification": "MODELLED CASE STUDY — not LTWP telemetry, forecast, grid study, PPA offer, or investment recommendation",
+  "period_utc": [
+    "2024-01-01T00:00:00Z",
+    "2024-12-31T23:00:00Z"
+  ],
+  "source_facts": {
+    "ltwp_2024_net_generation_mwh": 1367000,
+    "ltwp_2024_net_capacity_factor_pct": 50.17,
+    "ltwp_installed_capacity_mw": 310.25,
+    "source_url": "https://ltwp.co.ke/main/wp-content/uploads/2025/06/LTWP-2024-sustainability-report-compressed.pdf"
+  },
+  "weather_source": {
+    "provider": "NASA POWER Hourly API v2.10.2",
+    "api_url": "https://power.larc.nasa.gov/api/temporal/hourly/point?parameters=ALLSKY_SFC_SW_DWN%2CWS50M&community=RE&longitude=36.8&latitude=2.5&start=20240101&end=20241231&format=JSON&time-standard=UTC",
+    "coordinates": {
+      "latitude": 2.5,
+      "longitude": 36.8,
+      "reported_elevation_m": 873.14
+    },
+    "parameters": [
+      "WS50M",
+      "ALLSKY_SFC_SW_DWN"
+    ],
+    "time_standard": "UTC",
+    "caveat": "Regional reanalysis near the site, not LTWP mast data, SCADA, or bankable resource assessment."
+  },
+  "wind_model": {
+    "nameplate_mw": 310.25,
+    "hub_height_m": 80,
+    "shear_exponent": 0.14,
+    "cut_in_m_s": 3.5,
+    "rated_m_s": 12,
+    "cut_out_m_s": 25,
+    "assumed_constant_plant_availability_pct": 98.5,
+    "annual_energy_normalization_factor": 5.616379,
+    "calibration_target_mwh": 1367000,
+    "dispatch_priority": "wind first",
+    "caveat": "The scalar forces the generic NASA/generic-turbine shape to match a published annual total. It does not validate interval shape or actual availability."
+  },
+  "solar_model": {
+    "dc_mwp": 77.5,
+    "ac_mw": 74.62,
+    "assumed_constant_plant_availability_pct": 99,
+    "generic_performance_factor": 0.82,
+    "formula": "min(74.62, 77.5 * max(GHI_Wh_m2,0) / 1000 * 0.82) * availability_fraction",
+    "modelled_annual_available_mwh": 142847.67,
+    "caveat": "Simple horizontal-GHI conversion; not PVsyst, POA transposition, temperature/loss simulation, P50/P90, or bankable yield."
+  },
+  "grid_and_dispatch": {
+    "base_limit_mw": 310,
+    "input_scenario_envelope_mw": 400,
+    "additional_sensitivity_caps_mw": [
+      250,
+      310,
+      400
+    ],
+    "base_allocation": "wind priority; solar uses residual headroom",
+    "caveat": "No grid transfer limit is established. 250/310/400 MW are scenario assumptions."
+  },
+  "hypothetical_offtake": {
+    "tariff_usd_per_mwh": 65,
+    "tenor_years": 20,
+    "escalation_pct": 0,
+    "payment_days": 30,
+    "revolving_letter_of_credit_months": 2,
+    "status": "fictional non-binding case-study term sheet; no actual LTWP/KPLC transaction"
+  }
+}
