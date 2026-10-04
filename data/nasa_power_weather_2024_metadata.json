@@ -1,0 +1,33 @@
+{
+  "query_url": "https://power.larc.nasa.gov/api/temporal/hourly/point?parameters=ALLSKY_SFC_SW_DWN,WS50M&community=RE&longitude=36.8&latitude=2.5&start=20240101&end=20241231&format=JSON&time-standard=UTC",
+  "api": {
+    "version": "v2.10.2",
+    "name": "POWER Hourly API"
+  },
+  "data_sources": [
+    "SYN1DEG",
+    "MERRA2",
+    "POWER"
+  ],
+  "time_standard": "UTC",
+  "period": [
+    "20240101",
+    "20241231"
+  ],
+  "coords": [
+    36.8,
+    2.5,
+    873.14
+  ],
+  "parameters": {
+    "ALLSKY_SFC_SW_DWN": {
+      "units": "Wh/m^2",
+      "longname": "All Sky Surface Shortwave Downward Irradiance"
+    },
+    "WS50M": {
+      "units": "m/s",
+      "longname": "Wind Speed at 50 Meters"
+    }
+  },
+  "messages": []
+}
