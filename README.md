@@ -3,7 +3,6 @@
 An independent screening study of whether a co-located solar PV project at Lake Turkana Wind Power (LTWP) could create financeable incremental value. This is a decision framework and reproducible dispatch screen, not an LTWP proposal, grid-connection study, yield assessment or investment recommendation.
 
 ## Decision question
-
 Would solar at the LTWP site generate enough additional, deliverable and contractable value to justify its development, connection and financing costs under Kenya's actual dispatch conditions and a credible offtake structure?
 
 The investment chain is: resource → grid acceptance → contracted energy → cash flow → debt capacity → equity return. A benefit at one link does not prove value at the next. A nearby line or substation does not itself prove spare capacity, low connection cost or a right to sell power.
@@ -29,8 +28,10 @@ Important units: 400 kV describes voltage. It is not a 400 MW transfer limit. Ex
 
 ## Contents
 
-- hybrid_analysis.py: chronological dispatch-screening model; it requires analyst-supplied time series.
+- [Evidence dashboard](docs/evidence_dashboard.md): one-page view of the four investment gates, evidence status and next requests.
+- hybrid_analysis.py: chronological dispatch-screening model; it requires time-series inputs.
 - data/hourly_profile_template.csv: schema for timestamped wind, solar and export-limit data.
+- [Illustrative proxy week](data/illustrative_proxy_week.csv): generated seven-day teaching profile, explicitly not LTWP data.
 - docs/investment_case.md: diligence plan, commercial structures and project-finance model requirements.
 - docs/evidence_register.csv: source-backed claims, limitations and evidence requests.
 - data/PVsyst_Simulation_Results.csv: existing PVsyst output retained from the earlier study.
@@ -41,22 +42,22 @@ Requires Python 3.10 or later; no third-party package is needed.
 
     python hybrid_analysis.py --input data/hourly_profile_template.csv --output-dir outputs
 
-The template contains headings only, so the command stops with an input-data error until actual profiles are supplied. For a populated, source-documented file:
+The template contains headings only, so the command stops with an input-data error until actual profiles are supplied. For the illustrative sample:
 
-    python hybrid_analysis.py --input /path/to/verified_hourly_profiles.csv --output-dir outputs --scenario-caps-mw 100,200,300,400
+    python hybrid_analysis.py --input data/illustrative_proxy_week.csv --output-dir outputs --scenario-caps-mw 200,310,400
 
 Required columns: timestamp (ISO-8601 with timezone), wind_available_mw, solar_available_mw, export_limit_mw. Optional: energy_price_usd_mwh. Revenue is calculated only when supplied and is an illustrative uniform-price case, not a PPA forecast.
 
-The model compares wind-only with wind-plus-solar under solar priority, wind priority and pro-rata allocation. These are sensitivities, not assertions about dispatch rules or contractual curtailment order. Scenario caps apply an additional cap to the supplied export limit. Results are only as reliable as their inputs.
+The sample profile uses generated hourly curves for an assumed 310 MW wind nameplate, a 60 MW solar output ceiling for a hypothetical 77.5 MWp DC project and a 310 MW export ceiling. These are teaching assumptions; the export ceiling is not a known connection limit and the profile is not LTWP operating evidence. The sample is only one week and cannot support annual yield, curtailment, revenue or financing conclusions. See the [dashboard](docs/evidence_dashboard.md) for limitations and the evidence request sequence.
 
-Outputs are hourly dispatch and scenario summary CSV files. The tool reports delivered energy and curtailment by technology and incremental hybrid exports versus wind-only. It is a screening tool, not a power-system production-cost model, grid study or lender model.
+The model compares wind-only with wind-plus-solar under solar priority, wind priority and pro-rata allocation. These are sensitivities, not assertions about dispatch rules or contractual curtailment order. Scenario caps apply an additional cap to the supplied export limit. Results are only as reliable as their inputs; inspect the hourly output as well as the scenario summary.
 
 ## Decision gates
 
 1. Obtain time-aligned LTWP metered availability/generation, solar yield, system dispatch/curtailment and connection evidence.
 2. Establish the connection point, thermal and stability limits, outage conditions, connection works and the status of the Lessos–Loosuk route.
 3. Confirm the asset owner, lawful offtake route, tariff, payment security, curtailment/deemed-energy allocation and shared-facility charges.
-4. Only then build a tax and debt cash-flow model with CFADS, debt sizing, DSCR, LLCR, reserves and equity returns.
+4. Only then build a tax and debt cash-flow model with CFADS, DSCR, LLCR, reserves and equity returns.
 5. Proceed only if incremental contracted cash flow supports lender covenants and sponsor returns in downside cases.
 
 ## Sources
