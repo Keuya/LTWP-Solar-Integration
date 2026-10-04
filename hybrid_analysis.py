@@ -1,130 +1,163 @@
-"""LTWP + solar hybrid analysis.
+#!/usr/bin/env python3
+"""Chronological LTWP wind + solar dispatch screening.
 
-Uses the actual PVsyst monthly simulation results (data/PVsyst_Simulation_Results.csv,
-77.5 MWp / 199.3 GWh/yr / PR 86.2%) and adds the layers a developer or lender
-would ask for next:
-
-1. Hybrid complementarity - solar vs LTWP wind through the day and year.
-2. Curtailment exposure vs the evacuation limit (parameter, not a datum).
-3. An honest LCOE with discounting and degradation, plus P50/P90, CAPEX
-   overrun and curtailment scenarios.
-
-Wind shape note: LTWP publishes annual output (~1.5-1.7 TWh from 310 MW); the
-monthly/diurnal shapes here are STYLISED from the known behaviour of the
-Turkana low-level jet (stronger at night and in the SE-monsoon months) and are
-labelled as such. Replace with metered data if available.
-
-Usage: python hybrid_analysis.py   (writes charts + CSVs to outputs/)
+A transparent screening tool, not a production-cost model, grid study, PPA model
+or lender model. No synthetic resource profiles are generated.
 """
+import argparse
+import csv
+from datetime import datetime
+from pathlib import Path
+from statistics import median
 
-import os
-
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-OUT = "outputs"
-
-# --- Solar: actual PVsyst results -----------------------------------------
-def load_pvsyst(path="data/PVsyst_Simulation_Results.csv") -> pd.DataFrame:
-    df = pd.read_csv(path, skiprows=2, encoding="latin-1")
-    df = df.rename(columns={df.columns[0]: "month"})
-    df = df[df["month"].notna() & (df["month"] != "Year")]  # units row has no month
-    df["solar_gwh"] = pd.to_numeric(df["E_Grid"]) / 1e6
-    df["pr"] = pd.to_numeric(df["PR"])
-    return df[["month", "solar_gwh", "pr"]].reset_index(drop=True)
+REQUIRED = ("timestamp", "wind_available_mw", "solar_available_mw", "export_limit_mw")
+POLICIES = ("solar_priority", "wind_priority", "pro_rata")
 
 
-# --- Wind: stylised LTWP shape ---------------------------------------------
-WIND_MW = 310.0
-WIND_ANNUAL_GWH = 1_600.0     # public LTWP reporting range 1.5-1.7 TWh
-# Stylised monthly weighting (Turkana jet strongest ~Jun-Sep, weaker Nov-Dec)
-WIND_MONTHLY_SHAPE = np.array([0.9, 0.9, 0.85, 0.8, 1.0, 1.15, 1.25, 1.25,
-                               1.15, 1.0, 0.75, 0.8])
+def read_profiles(path):
+    if not path.exists():
+        raise ValueError("Input file not found: " + str(path))
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        missing = [c for c in REQUIRED if c not in (reader.fieldnames or [])]
+        if missing:
+            raise ValueError("Missing required columns: " + ", ".join(missing))
+        rows = []
+        for line, raw in enumerate(reader, start=2):
+            if not any((v or "").strip() for v in raw.values()):
+                continue
+            try:
+                stamp = datetime.fromisoformat(raw["timestamp"].strip().replace("Z", "+00:00"))
+            except (ValueError, AttributeError) as exc:
+                raise ValueError("Line %d: timestamp must be ISO-8601." % line) from exc
+            if stamp.tzinfo is None:
+                raise ValueError("Line %d: timestamp must include a timezone." % line)
+            row = {"timestamp": stamp}
+            for name in REQUIRED[1:]:
+                try:
+                    row[name] = float(raw[name])
+                except (ValueError, TypeError) as exc:
+                    raise ValueError("Line %d: %s must be numeric." % (line, name)) from exc
+                if row[name] < 0:
+                    raise ValueError("Line %d: %s cannot be negative." % (line, name))
+            price = (raw.get("energy_price_usd_mwh") or "").strip()
+            row["energy_price_usd_mwh"] = float(price) if price else None
+            rows.append(row)
+    if len(rows) < 2:
+        raise ValueError("At least two timestamped records are needed to infer interval length.")
+    rows.sort(key=lambda r: r["timestamp"])
+    steps = [(rows[i+1]["timestamp"]-rows[i]["timestamp"]).total_seconds()/3600
+             for i in range(len(rows)-1)]
+    if any(x <= 0 for x in steps):
+        raise ValueError("Timestamps must be unique and strictly increasing.")
+    step = median(steps)
+    if any(abs(x-step) > 1e-6 for x in steps):
+        raise ValueError("Intervals must be regular; resample or split the input.")
+    if step > 24:
+        raise ValueError("Inferred interval exceeds 24 hours; supply sub-daily data.")
+    return rows, step
 
-# Stylised diurnal capacity factors (night jet) and solar bell curve
-HOURS = np.arange(24)
-# mean 0.59 matches the ~1.6 TWh/yr annual figure (310 MW, CF ~59%)
-WIND_DIURNAL_CF = 0.59 + 0.27 * np.cos((HOURS - 2) / 24 * 2 * np.pi)
-SOLAR_DIURNAL = np.exp(-((HOURS - 12.2) ** 2) / (2 * 2.6 ** 2))
-SOLAR_DIURNAL[(HOURS < 6.5) | (HOURS > 18.5)] = 0.0
 
-SOLAR_MWP = 77.5
-EVACUATION_LIMIT_MW = 400.0   # assumption to test, not a datum
-
-
-# --- Solar economics ---------------------------------------------------------
-CAPEX_USD_W = 0.75
-OPEX_USD_KW_YR = 10.0
-DISCOUNT_REAL = 0.10
-LIFE = 25
-DEGRADATION = 0.005
+def allocate(wind, solar, limit, policy):
+    if wind + solar <= limit:
+        return wind, solar
+    if policy == "solar_priority":
+        s = min(solar, limit)
+        return min(wind, max(0.0, limit-s)), s
+    if policy == "wind_priority":
+        w = min(wind, limit)
+        return w, min(solar, max(0.0, limit-w))
+    scale = limit / (wind + solar) if wind + solar else 0.0
+    return wind*scale, solar*scale
 
 
-def lcoe(annual_gwh_yr1: float, capex_mult=1.0, curtailment=0.0) -> float:
-    """Real LCOE in USD/kWh with discounting and degradation."""
-    capex = SOLAR_MWP * 1e6 * CAPEX_USD_W * capex_mult
-    yrs = np.arange(1, LIFE + 1)
-    disc = (1 + DISCOUNT_REAL) ** -yrs
-    energy = annual_gwh_yr1 * 1e6 * (1 - DEGRADATION) ** (yrs - 1) * (1 - curtailment)
-    opex = SOLAR_MWP * 1e3 * OPEX_USD_KW_YR
-    return (capex + (opex * disc).sum()) / (energy * disc).sum()
+def parse_caps(value):
+    if not value:
+        return [("input_export_limit", None)]
+    result = []
+    for item in value.split(","):
+        cap = float(item.strip())
+        if cap <= 0:
+            raise ValueError("Scenario caps must be positive MW values.")
+        result.append(("scenario_cap_%g_mw" % cap, cap))
+    return result
 
 
-def main() -> None:
-    os.makedirs(OUT, exist_ok=True)
-    sol = load_pvsyst()
-    annual_solar = sol["solar_gwh"].sum()
+def run(rows, hours, caps, outdir):
+    outdir.mkdir(parents=True, exist_ok=True)
+    detail_fields = ("timestamp,scenario,dispatch_policy,interval_hours,"
+        "wind_only_export_mwh,hybrid_wind_export_mwh,hybrid_solar_export_mwh,"
+        "hybrid_total_export_mwh,wind_curtailed_mwh,solar_curtailed_mwh,"
+        "incremental_hybrid_export_mwh,illustrative_revenue_usd").split(",")
+    summaries = []
+    with (outdir/"hourly_dispatch.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=detail_fields)
+        writer.writeheader()
+        for scenario, cap in caps:
+            for policy in POLICIES:
+                sums = {k: 0.0 for k in ("wind_only_export_mwh","hybrid_wind_export_mwh",
+                    "hybrid_solar_export_mwh","wind_curtailed_mwh","solar_curtailed_mwh",
+                    "incremental_hybrid_export_mwh","illustrative_revenue_usd")}
+                price_complete = True
+                for r in rows:
+                    limit = min(r["export_limit_mw"], cap) if cap is not None else r["export_limit_mw"]
+                    wind, solar = r["wind_available_mw"], r["solar_available_mw"]
+                    wo = min(wind, limit)*hours
+                    hw, hs = allocate(wind, solar, limit, policy)
+                    hw, hs = hw*hours, hs*hours
+                    wc, sc = max(0.0,wind-hw/hours)*hours, max(0.0,solar-hs/hours)*hours
+                    total = hw+hs
+                    incremental = total-wo
+                    price = r["energy_price_usd_mwh"]
+                    if price is None:
+                        price_complete = False
+                    else:
+                        sums["illustrative_revenue_usd"] += total*price
+                    vals = {
+                        "timestamp":r["timestamp"].isoformat(),"scenario":scenario,
+                        "dispatch_policy":policy,"interval_hours":hours,
+                        "wind_only_export_mwh":wo,"hybrid_wind_export_mwh":hw,
+                        "hybrid_solar_export_mwh":hs,"hybrid_total_export_mwh":total,
+                        "wind_curtailed_mwh":wc,"solar_curtailed_mwh":sc,
+                        "incremental_hybrid_export_mwh":incremental,
+                        "illustrative_revenue_usd":"" if price is None else total*price}
+                    writer.writerow(vals)
+                    for k in ("wind_only_export_mwh","hybrid_wind_export_mwh",
+                              "hybrid_solar_export_mwh","wind_curtailed_mwh",
+                              "solar_curtailed_mwh","incremental_hybrid_export_mwh"):
+                        sums[k] += vals[k]
+                if not price_complete:
+                    sums["illustrative_revenue_usd"] = ""
+                summaries.append({"scenario":scenario,"dispatch_policy":policy,
+                    "interval_hours":hours,"records":len(rows),**sums,
+                    "revenue_note":("Illustrative only; supplied prices are not evidence of a PPA."
+                    if price_complete else "Not calculated: price missing in one or more intervals.")})
+    with (outdir/"dispatch_scenarios.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(summaries[0]))
+        writer.writeheader()
+        writer.writerows(summaries)
+    return summaries
 
-    wind_monthly = WIND_ANNUAL_GWH * WIND_MONTHLY_SHAPE / WIND_MONTHLY_SHAPE.sum()
 
-    # Chart 1: monthly complementarity
-    fig, ax = plt.subplots(figsize=(10, 5))
-    x = np.arange(12)
-    ax.bar(x - 0.2, wind_monthly, 0.4, label="LTWP wind 310 MW (stylised shape)", color="#2b6cb0")
-    ax.bar(x + 0.2, sol["solar_gwh"], 0.4, label="Solar 77.5 MWp (PVsyst actuals)", color="#f4b942")
-    ax.set_xticks(x), ax.set_xticklabels([m[:3] for m in sol["month"]])
-    ax.set_ylabel("GWh / month")
-    ax.set_title("Monthly generation: solar firms the wind farm's weak months (Nov-Apr)")
-    ax.legend()
-    fig.tight_layout()
-    fig.savefig(os.path.join(OUT, "monthly_complementarity.png"), dpi=150)
-
-    # Chart 2: stylised diurnal profile + evacuation limit
-    wind_mw = WIND_MW * WIND_DIURNAL_CF
-    solar_mw = SOLAR_MWP * 0.965 * SOLAR_DIURNAL      # inverter/ac ratio approx
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.stackplot(HOURS, wind_mw, solar_mw, labels=["Wind (stylised diurnal)", "Solar"],
-                 colors=["#2b6cb0", "#f4b942"], alpha=0.85)
-    ax.axhline(EVACUATION_LIMIT_MW, color="red", ls="--", lw=1.2,
-               label=f"Evacuation limit assumption ({EVACUATION_LIMIT_MW:.0f} MW)")
-    ax.set_xlabel("Hour of day"), ax.set_ylabel("MW")
-    ax.set_title("Diurnal complementarity: Turkana jet peaks at night, solar fills the day")
-    ax.legend(loc="upper right")
-    fig.tight_layout()
-    fig.savefig(os.path.join(OUT, "diurnal_profile.png"), dpi=150)
-
-    combined_peak = float((wind_mw + solar_mw).max())
-
-    # Scenario table
-    p90 = 0.95   # PVsyst P90/P50 for low interannual variability sites
-    scen = pd.DataFrame({
-        "Base (P50)": [annual_solar, lcoe(annual_solar)],
-        "P90 yield": [annual_solar * p90, lcoe(annual_solar * p90)],
-        "CAPEX +20%": [annual_solar, lcoe(annual_solar, capex_mult=1.2)],
-        "Curtailment 10%": [annual_solar * 0.9, lcoe(annual_solar, curtailment=0.10)],
-        "Combined downside": [annual_solar * p90 * 0.9,
-                              lcoe(annual_solar * p90, capex_mult=1.2, curtailment=0.10)],
-    }, index=["Energy sold (GWh/yr)", "LCOE (USD/kWh)"]).T
-    scen["LCOE (USD/kWh)"] = scen["LCOE (USD/kWh)"].round(4)
-    scen["Energy sold (GWh/yr)"] = scen["Energy sold (GWh/yr)"].round(1)
-    scen.to_csv(os.path.join(OUT, "lcoe_scenarios.csv"))
-
-    print(f"Solar annual energy (PVsyst): {annual_solar:.1f} GWh, avg PR {sol['pr'].mean():.3f}")
-    print(f"Stylised combined peak: {combined_peak:.0f} MW vs limit {EVACUATION_LIMIT_MW:.0f} MW")
-    print(scen.to_string())
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=Path("data/hourly_profile_template.csv"))
+    parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
+    parser.add_argument("--scenario-caps-mw", default=None,
+        help="Optional sensitivities such as 100,200,300,400 MW; illustrative absent grid evidence.")
+    args = parser.parse_args()
+    try:
+        rows, hours = read_profiles(args.input)
+        results = run(rows, hours, parse_caps(args.scenario_caps_mw), args.output_dir)
+    except (ValueError, OSError) as exc:
+        parser.error(str(exc))
+    print("Processed %d records at %g-hour intervals." % (len(rows), hours))
+    print("Wrote hourly_dispatch.csv and dispatch_scenarios.csv to %s" % args.output_dir)
+    for r in results:
+        total = r["hybrid_wind_export_mwh"] + r["hybrid_solar_export_mwh"]
+        print("%s | %s | wind-only %.1f MWh | hybrid %.1f MWh | incremental %.1f MWh" %
+              (r["scenario"],r["dispatch_policy"],r["wind_only_export_mwh"],
+               total,r["incremental_hybrid_export_mwh"]))
 
 
 if __name__ == "__main__":
