@@ -1,88 +1,71 @@
-# LTWP Solar Integration — Hybridising Kenya's Largest Wind Farm
+# LTWP Solar Hybrid: investment and grid-deliverability screen
 
-Can a 77.5 MWp solar plant co-located with Lake Turkana Wind Power (310 MW) add
-energy **without new transmission**, and does it stand up commercially? This repo
-combines actual PVsyst simulation results with a hybrid complementarity and
-curtailment analysis, and an honest scenario-based LCOE.
+An independent screening study of whether a co-located solar PV project at Lake Turkana Wind Power (LTWP) could create financeable incremental value. This is a decision framework and reproducible dispatch screen, not an LTWP proposal, grid-connection study, yield assessment or investment recommendation.
 
-## Design (PVsyst simulation, actuals in `data/`)
+## Decision question
 
-| Parameter | Value |
+Would solar at the LTWP site generate enough additional, deliverable and contractable value to justify its development, connection and financing costs under Kenya's actual dispatch conditions and a credible offtake structure?
+
+The investment chain is: resource → grid acceptance → contracted energy → cash flow → debt capacity → equity return. A benefit at one link does not prove value at the next. A nearby line or substation does not itself prove spare capacity, low connection cost or a right to sell power.
+
+## Evidence that changes the original framing
+
+- EPRA reported no wind energy curtailed in FY2024/25. In its July–December 2025 report, it recorded 11.28 GWh of wind curtailment within 245.35 GWh of combined wind and geothermal curtailment. The report says curtailment typically occurs during low-demand overnight hours. These system-level figures do not establish LTWP-specific hourly exposure.
+- KETRACO announced the 400 kV Lessos–Loosuk project as an alternative evacuation route intended to carry up to 300 MW of LTWP wind. Treat it as a future grid scenario until its in-service date, operating limits and dispatch effect are evidenced.
+- LTWP's public FAQ says the existing PPA permits sales to KPLC. A separate solar project's offtake route, contract terms and payment rights require confirmation.
+
+Important units: 400 kV describes voltage. It is not a 400 MW transfer limit. Export-limit cases in the model are sensitivities only; use a grid study or connection agreement for a real limit.
+
+## Established and unestablished
+
+| Item | Status |
 |---|---|
-| Solar capacity | 77.50 MWp / 74.62 MWac |
-| Annual energy to grid | **199.3 GWh (P50)** |
-| Performance ratio | 86.2% |
-| Specific yield | ~2,572 kWh/kWp (Turkana is an exceptional solar site) |
+| PVsyst annual solar energy: 199.3 GWh for 77.5 MWp | Reported simulation output in the existing CSV; resource provenance, loss assumptions and independent yield review need documentation. |
+| Solar resource and interannual uncertainty | Not lender-certified; a simple haircut is not a P90 assessment. |
+| Wind annual and hourly shape | No verified metered time series included. Earlier wind shapes were stylised and are unsuitable for an investment conclusion. |
+| Export capacity and curtailment allocation | Unknown pending grid evidence and contractual review. |
+| PPA price, tenor, payment security and solar eligibility | Unknown for a standalone solar asset. |
+| Project returns and debt capacity | Not established. No bankable CFADS, DSCR, LLCR or equity-return result is claimed. |
 
-## Why hybridise: the complementarity case
+## Contents
 
-![Monthly complementarity](outputs/monthly_complementarity.png)
-![Diurnal profile](outputs/diurnal_profile.png)
+- hybrid_analysis.py: chronological dispatch-screening model; it requires analyst-supplied time series.
+- data/hourly_profile_template.csv: schema for timestamped wind, solar and export-limit data.
+- docs/investment_case.md: diligence plan, commercial structures and project-finance model requirements.
+- docs/evidence_register.csv: source-backed claims, limitations and evidence requests.
+- data/PVsyst_Simulation_Results.csv: existing PVsyst output retained from the earlier study.
 
-1. **Diurnal:** the Turkana low-level jet blows hardest at night; solar fills the
-   daytime trough. The stylised combined peak (~267 MW) stays well below a
-   400 MW evacuation assumption — **solar re-uses interconnection the wind farm
-   already paid for**, the single biggest cost advantage of this project.
-2. **Seasonal:** wind output sags November–April, exactly when irradiance holds
-   steady. Hybrid output is materially flatter — worth real money to a grid
-   operator managing evening hydro dispatch.
-3. **Infrastructure leverage:** roads, O&M base, substation and the 400 kV
-   Loiyangalani–Suswa line exist. Marginal integration cost is close to panels +
-   inverters + a new bay.
+## Run the dispatch screen
 
-## LCOE — corrected, with scenarios
+Requires Python 3.10 or later; no third-party package is needed.
 
-An earlier version of this analysis quoted €0.0194/kWh from the PVsyst economic
-module. That figure ignores discounting and is not defensible in front of a
-lender. Recomputed (10% real discount rate, 0.5%/yr degradation, $0.75/W CAPEX,
-$10/kW-yr OPEX, 25 yrs):
+    python hybrid_analysis.py --input data/hourly_profile_template.csv --output-dir outputs
 
-| Scenario | Energy sold (GWh/yr) | LCOE (USD/kWh) |
-|---|---|---|
-| Base (P50) | 199.3 | **0.037** |
-| P90 yield | 189.4 | 0.039 |
-| CAPEX +20% | 199.3 | 0.044 |
-| Curtailment 10% | 179.4 | 0.042 |
-| Combined downside | 170.4 | **0.052** |
+The template contains headings only, so the command stops with an input-data error until actual profiles are supplied. For a populated, source-documented file:
 
-Even the combined downside clears typical Kenyan solar procurement levels. The
-economics are robust; **the risks are commercial, not technical.**
+    python hybrid_analysis.py --input /path/to/verified_hourly_profiles.csv --output-dir outputs --scenario-caps-mw 100,200,300,400
 
-## What a lender would challenge (bankability layer)
+Required columns: timestamp (ISO-8601 with timezone), wind_available_mw, solar_available_mw, export_limit_mw. Optional: energy_price_usd_mwh. Revenue is calculated only when supplied and is an illustrative uniform-price case, not a PPA forecast.
 
-- **Offtake:** is solar sold under the existing LTWP PPA, a new PPA, or merchant?
-  Kenya Power's payment record and the deemed-energy treatment of the *existing*
-  PPA are the gating items — LTWP's own history of transmission-delay deemed
-  energy payments is the cautionary tale here.
-- **Curtailment allocation:** if the system operator curtails the hybrid site,
-  which technology backs down first, and who is compensated? Must be explicit
-  in the grid-connection agreement.
-- **Evacuation limit:** the 400 MW limit used here is an assumption to test, not
-  a datum — the real number is a KETRACO/system-operator study output.
-- **Yield basis:** debt sized on P90 (~189 GWh); the table shows the spread.
-- **Storage option:** a 2–4 hr battery would shift solar into the evening peak
-  and firm the deemed-energy position; worth a follow-on case once time-of-day
-  pricing signals exist.
+The model compares wind-only with wind-plus-solar under solar priority, wind priority and pro-rata allocation. These are sensitivities, not assertions about dispatch rules or contractual curtailment order. Scenario caps apply an additional cap to the supplied export limit. Results are only as reliable as their inputs.
 
-## Run it
+Outputs are hourly dispatch and scenario summary CSV files. The tool reports delivered energy and curtailment by technology and incremental hybrid exports versus wind-only. It is a screening tool, not a power-system production-cost model, grid study or lender model.
 
-```bash
-pip install -r requirements.txt
-python hybrid_analysis.py
-```
+## Decision gates
 
-Reads `data/PVsyst_Simulation_Results.csv` (real simulation output), writes
-charts and the scenario table to `outputs/`. Wind monthly/diurnal shapes are
-**stylised** from the known behaviour of the Turkana jet and scaled to LTWP's
-published ~1.6 TWh/yr — swap in metered data to harden the curtailment result.
+1. Obtain time-aligned LTWP metered availability/generation, solar yield, system dispatch/curtailment and connection evidence.
+2. Establish the connection point, thermal and stability limits, outage conditions, connection works and the status of the Lessos–Loosuk route.
+3. Confirm the asset owner, lawful offtake route, tariff, payment security, curtailment/deemed-energy allocation and shared-facility charges.
+4. Only then build a tax and debt cash-flow model with CFADS, debt sizing, DSCR, LLCR, reserves and equity returns.
+5. Proceed only if incremental contracted cash flow supports lender covenants and sponsor returns in downside cases.
 
-## Repository structure
+## Sources
 
-```
-data/       PVsyst simulation results (CSV) + feasibility report (PDF)
-docs/       technical reports
-images/     PVsyst output graphs
-pv_design/  PVsyst project files
-outputs/    generated charts + scenario tables
-hybrid_analysis.py
-```
+See docs/evidence_register.csv for dates, precise claims and limitations.
+
+- EPRA FY ended 30 June 2025: https://epra.go.ke/sites/default/files/2025-09/Statistics-Report-June-2025-Web.pdf
+- EPRA July–December 2025: https://epra.go.ke/sites/default/files/2026-03/Biannual%20Statistics%20Report%202025-2026.pdf
+- KETRACO Lessos–Loosuk announcement: https://www.ketraco.co.ke/information-center/media-center/news/ketraco-signs-landmark-public-private-partnership-africa50-and
+- LTWP FAQ: https://ltwp.co.ke/frequently-asked-questions/
+
+Independent analysis for learning and professional demonstration. Public information does not substitute for sponsor, operator, lender, legal or system-operator diligence.
