@@ -31,7 +31,7 @@ Important units: 400 kV describes voltage. It is not a 400 MW transfer limit. Ex
 - [Evidence dashboard](docs/evidence_dashboard.md): one-page view of the four investment gates, evidence status and next requests.
 - hybrid_analysis.py: chronological dispatch-screening model; it requires time-series inputs.
 - data/hourly_profile_template.csv: schema for timestamped wind, solar and export-limit data.
-- [Illustrative proxy week](data/illustrative_proxy_week.csv): generated seven-day teaching profile, explicitly not LTWP data.
+- [Illustrative proxy week](data/illustrative_proxy_week.csv): NASA POWER-based seven-day proxy, with clearly labelled turbine/PV conversion assumptions.
 - docs/investment_case.md: diligence plan, commercial structures and project-finance model requirements.
 - docs/evidence_register.csv: source-backed claims, limitations and evidence requests.
 - data/PVsyst_Simulation_Results.csv: existing PVsyst output retained from the earlier study.
@@ -48,7 +48,7 @@ The template contains headings only, so the command stops with an input-data err
 
 Required columns: timestamp (ISO-8601 with timezone), wind_available_mw, solar_available_mw, export_limit_mw. Optional: energy_price_usd_mwh. Revenue is calculated only when supplied and is an illustrative uniform-price case, not a PPA forecast.
 
-The sample profile uses generated hourly curves for an assumed 310 MW wind nameplate, a 60 MW solar output ceiling for a hypothetical 77.5 MWp DC project and a 310 MW export ceiling. These are teaching assumptions; the export ceiling is not a known connection limit and the profile is not LTWP operating evidence. The sample is only one week and cannot support annual yield, curtailment, revenue or financing conclusions. See the [dashboard](docs/evidence_dashboard.md) for limitations and the evidence request sequence.
+The sample profile uses NASA POWER hourly 50 m wind and all-sky irradiance for a point near LTWP (2–8 March 2024, UTC), converted using a generic 80 m shear adjustment/turbine power curve and a simple GHI-to-PV output derate. It is a weather-based proxy, not LTWP turbine output or a PVsyst yield assessment. The 310 MW export ceiling is arbitrary and is not a known connection limit. One week cannot support annual yield, curtailment, revenue or financing conclusions. See the [dashboard](docs/evidence_dashboard.md) for methodology, limits and evidence requests.
 
 The model compares wind-only with wind-plus-solar under solar priority, wind priority and pro-rata allocation. These are sensitivities, not assertions about dispatch rules or contractual curtailment order. Scenario caps apply an additional cap to the supplied export limit. Results are only as reliable as their inputs; inspect the hourly output as well as the scenario summary.
 
