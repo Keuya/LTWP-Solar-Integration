@@ -41,6 +41,10 @@ Then inspect `outputs/dispatch_scenarios.csv` for wind-only exports, hybrid expo
 
 This is a one-week weather proxy. It cannot estimate annual generation, curtailment probability, P50/P90 yield, revenue or debt capacity. Replace it with multi-year site-validated and operator data before using results in an investment memo.
 
+## Inputs to request before replacing the proxy
+
+Use the [required input pack](required_input_pack.md) for exact definitions, units, periods and quality checks. Track each request in the [evidence request tracker](../data/evidence_request_tracker.csv). The priority items are interval wind availability and curtailment, approved export limits and grid studies, PVsyst/weather provenance, and an evidenced solar offtake route. CAPEX, OPEX and financing terms come after those technical and revenue gates.
+
 ## Evidence request sequence
 
 1. **LTWP / operator:** interval generation, availability, curtailment and settlement data with timestamps and definitions.
