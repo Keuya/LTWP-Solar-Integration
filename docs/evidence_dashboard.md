@@ -1,6 +1,6 @@
 # LTWP solar hybrid: evidence at a glance
 
-> **Screening case, not an investment conclusion.** The sample dispatch profile is generated proxy data for model demonstration. It is not LTWP metering, an ERA5/PVGIS download, an operator dispatch record, a grid study, a yield assessment or a PPA.
+> **Screening case, not an investment conclusion.** The sample uses NASA POWER hourly weather reanalysis for a point near LTWP, converted into generic wind and PV output proxies. It is not LTWP metering, a validated project yield assessment, an operator dispatch record, a grid study or a PPA.
 
 **Current decision:** the concept is worth screening, but no bankable incremental value or project return is established. The binding questions are what can be exported, who is paid for the solar energy, and on what terms.
 
@@ -8,16 +8,18 @@
 
 | Workstream | What we can say today | What is still missing | Status |
 |---|---|---|---|
-| Wind availability and curtailment | EPRA publishes national curtailment totals. The cited Jul–Dec 2025 report records 11.28 GWh of wind curtailment nationally; it does not identify LTWP's hourly curtailment. | At least 12 months of aligned LTWP available generation, actual generation, outage/availability, curtailment instructions and settlement, reconciled to operator data. | **Missing for LTWP** |
+| Wind availability and curtailment | EPRA publishes national curtailment totals. The cited Jul–Dec 2025 report records 11.28 GWh of wind curtailment nationally; it does not identify LTWP's hourly curtailment. NASA POWER gives regional 50 m reanalysis wind, not LTWP turbine output. | At least 12 months of aligned LTWP available generation, actual generation, outage/availability, curtailment instructions and settlement, reconciled to operator data. | **Missing for LTWP** |
 | Grid studies and connection limit | KETRACO announced a planned 400 kV Lessos–Loosuk route, described as intended to evacuate up to 300 MW of LTWP wind. 400 kV is voltage; it is not a 400 MW limit. | Connection agreement, point-of-connection ratings, load-flow and stability studies, N-1/contingency limits, outage assumptions, upgrade scope/cost and route commissioning status. | **Unverified** |
-| Solar yield and provenance | The repository's existing PVsyst CSV reports 199.3 GWh/year for 77.5 MWp. | PVsyst project and version, coordinates, weather file/source and period, loss diagram, degradation, P50/P90 uncertainty report and independent review. | **Reported; provenance incomplete** |
+| Solar yield and provenance | The repository's existing PVsyst CSV reports 199.3 GWh/year for 77.5 MWp. NASA POWER gives regional horizontal irradiance for the demo week, not plane-of-array project yield. | PVsyst project and version, coordinates, weather file/source and period, loss diagram, degradation, P50/P90 uncertainty report and independent review. | **Reported; provenance incomplete** |
 | PPA and offtake | LTWP's public FAQ describes its existing PPA with KPLC. That alone does not show a separate solar plant can sell under it. | Written legal/commercial route for solar, tariff, term, dispatch and curtailment allocation, deemed energy, payment security, consent, metering and shared-facility charges. | **Unconfirmed for solar** |
 
 Sources and limitations are in [the evidence register](evidence_register.csv) and [investment diligence plan](investment_case.md).
 
 ## What the proxy case shows
 
-Open [the seven-day sample profile](../data/illustrative_proxy_week.csv). It contains hourly values for a **310 MW assumed wind nameplate**, a **60 MW assumed solar output ceiling** representing a hypothetical 77.5 MWp DC plant, and a **310 MW assumed export ceiling**. The curves are generated for demonstration and the 310 MW export ceiling is an arbitrary sensitivity input, not a known grid limit. No price is supplied because no evidenced solar tariff is available.
+Open [the seven-day sample profile](../data/illustrative_proxy_week.csv). NASA POWER v2.10.2 supplies hourly `WS50M` wind speed and `ALLSKY_SFC_SW_DWN` irradiance for 2.5°N, 36.8°E on 2–8 March 2024 (UTC). A generic shear adjustment and turbine power curve convert wind speed to MW; a simple GHI-to-output derate converts irradiance to solar MW. The file assumes 310 MW wind nameplate, 77.5 MWp solar and a 310 MW export ceiling. The export ceiling is an arbitrary sensitivity input, not a known grid limit. No price is supplied because no evidenced solar tariff is available.
+
+The power conversions are teaching assumptions, not turbine-specific or PVsyst results. See [the data notes](../data/README.md) for equations, source links and limits.
 
 Run it with:
 
@@ -27,7 +29,7 @@ python hybrid_analysis.py --input data/illustrative_proxy_week.csv --output-dir 
 
 Then inspect `outputs/dispatch_scenarios.csv` for wind-only exports, hybrid exports, incremental energy and curtailment under three dispatch allocation sensitivities. Inspect `outputs/hourly_dispatch.csv` to see each hour. The 200/310/400 MW values are **illustrative sensitivities**, not approved grid cases or connection advice.
 
-This is a one-week teaching example. It cannot estimate annual generation, curtailment probability, P50/P90 yield, revenue or debt capacity. Replace the proxy with time-aligned, source-documented data before using results in an investment memo.
+This is a one-week weather proxy. It cannot estimate annual generation, curtailment probability, P50/P90 yield, revenue or debt capacity. Replace it with multi-year site-validated and operator data before using results in an investment memo.
 
 ## Evidence request sequence
 
